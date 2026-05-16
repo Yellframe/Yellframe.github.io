@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "skills": {
+    "frontend-design": {
+      "source": "hxk622/tokendance",
+      "sourceType": "github",
+      "skillPath": "backend/app/skills/builtin/frontend-design/SKILL.md",
+      "computedHash": "e97f7a9527aa1580fc655f0567601a08a30ca2d64b33d113b2289d06cbb1b2ed"
+    },
+    "pixel-art": {
+      "source": "omer-metin/skills-for-antigravity",
+      "sourceType": "github",
+      "skillPath": "skills/pixel-art/SKILL.md",
+      "computedHash": "6ac3b2f6dde17855ddd7a9c93adbf4ff0b4ecb3c95118c1fba4821d7f6e1054b"
+    },
+    "web-coder": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/web-coder/SKILL.md",
+      "computedHash": "f26b2845e3b1ccd59ff2158c45fe2872038e27237757e063d3811a1244757074"
+    },
+    "web-component-design": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "skillPath": "plugins/ui-design/skills/web-component-design/SKILL.md",
+      "computedHash": "324d0ef35018b21b37e4d7b07336894824527e06b3a8bfa0496a0c5648c626c4"
+    }
+  }
+}
