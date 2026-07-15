@@ -229,7 +229,225 @@ html[data-theme="light"] .header {
     z-index: 1;
 }
 .hdr-meta-left  { left:  clamp(28px, 5vw, 72px); align-items: flex-start; }
-.hdr-meta-right { right: clamp(28px, 5vw, 72px); align-items: flex-end; }
+.hdr-meta-right { right: clamp(28px, 5vw, 72px); align-items: flex-end; gap: 7px; }
+
+/* Кликабельные метки-кнопки в правом HUD (ссылки на Linktree). */
+/* ТО ЖЕ, что с переключателем языка: .hdr-meta имеет z-index:1 и pointer-events:none,
+   а .header-left — z-index:2 и width:100%, поэтому он перекрывал кнопки сверху.
+   Поднимаем весь правый HUD выше и включаем клики только на ссылках. */
+.hdr-meta-right:has(.hdr-link) {
+    z-index: 5;
+    pointer-events: none;
+}
+.hdr-link {
+    position: relative;
+    pointer-events: auto;
+    cursor: pointer;
+    text-decoration: none;
+    color: var(--fg-dim);
+    border-color: var(--border);
+    /* Рамка обхватывает текст (размер по контенту, как у декоративных меток). */
+    transition: color .14s ease, border-color .14s ease, box-shadow .14s ease, transform .08s ease, background .14s ease;
+}
+/* Невидимое расширение клик-зоны влево — чтобы рамка оставалась по тексту,
+   а нажималась вся полоса колонки HUD. */
+.hdr-link::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    left: calc(-1 * clamp(60px, 12vw, 200px));
+}
+.hdr-link .hdr-link-arrow {
+    color: var(--neon-amber);
+    opacity: 0;
+    transition: opacity .14s ease;
+}
+.hdr-link:hover .hdr-link-arrow { opacity: 1; }
+.hdr-link:hover {
+    color: var(--fg);
+    border-color: var(--neon-amber);
+    box-shadow: 0 0 0 1px var(--neon-amber), 0 0 10px rgba(255, 186, 67, 0.35);
+}
+.hdr-link:active {
+    transform: translateY(1px);
+    color: #1a0f00;
+    background: var(--neon-amber);
+    border-color: var(--neon-amber);
+    box-shadow: 0 0 0 1px var(--neon-amber), 0 0 14px rgba(255, 186, 67, 0.55);
+}
+.hdr-link:focus-visible {
+    outline: none;
+    color: var(--fg);
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 0 1px var(--neon-cyan), 0 0 10px rgba(0, 255, 240, 0.4);
+}
+/* Переключатель языка лежит внутри .hdr-meta-left. Родитель создаёт свой stacking context
+   (position+z-index), поэтому поднять кнопки над .header-left (z-index:2) можно только подняв
+   сам .hdr-meta-left. И включить pointer-events: auto на том же контейнере (на .hdr-meta он none). */
+.hdr-meta-left:has(.lang-switch) {
+    z-index: 5;
+    pointer-events: auto;
+}
+
+/* ---------- Переключатель языка (spy-OS terminal) ---------- */
+/* ВАЖНО: .hdr-meta по умолчанию имеет z-index:1 и pointer-events:none (чтобы декоративные
+   технические метки не ловили клики). .header-left имеет z-index:2 и ширину 100% —
+   это перекрывало переключатель сверху. Поднимаем переключатель выше и принудительно
+   включаем pointer-events: auto по всему дереву. */
+.lang-switch {
+    position: relative;
+    z-index: 5;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 8px 10px 9px;
+    border: 1px solid var(--border-soft);
+    background: rgba(0, 0, 0, 0.42);
+    pointer-events: auto;
+}
+.lang-switch * { pointer-events: auto; }
+html[data-theme="light"] .lang-switch { background: rgba(255, 255, 255, 0.55); }
+.lang-switch-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    color: var(--fg-dim);
+    text-transform: uppercase;
+    line-height: 1;
+    /* Лейбл декоративный — клики по нему не требуются, но он не должен их блокировать. */
+    pointer-events: none;
+}
+.lang-switch-btns { display: flex; gap: 8px; }
+.lang-btn {
+    position: relative;
+    z-index: 6;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    /* Более крупная hit-area: было 4×8, стало 8×12 + min-размеры по Material/WCAG (⊥65×36). */
+    padding: 8px 12px;
+    min-width: 65px;
+    min-height: 36px;
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid var(--border);
+    color: var(--fg-dim);
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.16em;
+    line-height: 1;
+    cursor: pointer;
+    pointer-events: auto;
+    user-select: none;
+    transition: color .15s ease, border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+/* Активная кнопка тоже должна ловить клики (на случай, если раньше был cursor: default). */
+.lang-btn.active { cursor: default; }
+/* Флаг-иконки — монохромные SVG с currentColor: подхватывают тон кнопки. */
+.lang-flag {
+    width: 18px !important;
+    height: 12px !important;
+    flex: 0 0 18px;
+    display: block;
+    color: inherit;
+    /* Пиксельный рендер в духе spy-OS. */
+    shape-rendering: crispEdges;
+}
+/* На случай, если сохранился старый маркап с <img> — локально жёстко фиксируем размер (бивший баг SVG width=900). */
+.lang-btn img {
+    width: 18px !important;
+    height: 12px !important;
+    display: block;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    filter: grayscale(1) brightness(1.4);
+    opacity: 0.85;
+}
+.lang-btn:hover {
+    color: var(--neon-cyan);
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 0 1px var(--neon-cyan), 0 0 10px rgba(0, 255, 240, 0.4);
+    transform: translateY(-1px);
+}
+.lang-btn.active {
+    color: var(--fg);
+    border-color: var(--neon-lime);
+    background: rgba(184, 255, 58, 0.08);
+    box-shadow: 0 0 0 1px var(--neon-lime), 0 0 10px rgba(184, 255, 58, 0.45);
+    cursor: default;
+}
+.lang-btn.active::before {
+    content: '';
+    position: absolute; left: 4px; top: 4px;
+    width: 4px; height: 4px;
+    background: var(--neon-lime);
+    box-shadow: 0 0 6px var(--neon-lime);
+}
+.lang-btn:disabled { opacity: 0.5; cursor: wait; }
+
+@media (max-width: 700px) {
+    .lang-switch { padding: 6px 8px; }
+    .lang-switch-label { font-size: 9px; }
+    /* На мобильных hit-area остаётся в пределах рекомендаций (touch-target ≥ 44×44 по iOS HIG). */
+    .lang-btn { font-size: 11px; padding: 8px 10px; min-width: 56px; min-height: 44px; }
+    .lang-flag,
+    .lang-btn img { width: 16px !important; height: 11px !important; flex-basis: 16px; }
+}
+
+/* На узких экранах .hdr-meta скрываются (max-width: 1100px) — переключатель языка
+   всё равно остаётся видимым и доступным, поднимая родителя над всем другим. */
+@media (max-width: 1100px) {
+    .hdr-meta-left:has(.lang-switch) {
+        display: flex !important;
+        top: 14px;
+        transform: none;
+        z-index: 5;
+    }
+}
+
+/* ---------- Пиксельный overlay-переход (серая палитра + холодный акцент ≤5%) ---------- */
+.pixel-overlay {
+    --px-cols: 32;
+    --px-rows: 18;
+    position: fixed;
+    inset: 0;
+    display: none;
+    grid-template-columns: repeat(var(--px-cols), 1fr);
+    grid-template-rows: repeat(var(--px-rows), 1fr);
+    pointer-events: none;
+    z-index: 100000;
+    background: transparent;
+}
+.pixel-overlay.active {
+    display: grid;
+    pointer-events: auto;
+}
+/* Пробег оттенками серого: вспышка светлым, затем к тёмно-серому. Полная непрозрачность ячейки — 1. */
+.px-cell {
+    background: #181818;
+    opacity: 0;
+    animation: px-cell-in .18s steps(3) forwards;
+}
+@keyframes px-cell-in {
+    0%   { opacity: 0;    background: #d8d8d8; }
+    50%  { opacity: 0.85; background: #6e6e6e; }
+    100% { opacity: 1;    background: #181818; }
+}
+/* Акцентные ячейки (примерно каждая десятая, класс навешивается из JS) — лёгкий матричный всплеск.
+   Используем rgba(…, 0.1) — не больше 10% от яркости матрично-зелёного. */
+.px-cell.px-accent {
+    animation: px-cell-in-accent .18s steps(3) forwards;
+}
+@keyframes px-cell-in-accent {
+    0%   { opacity: 0;    background: rgba(0, 255, 65, 0.08); }
+    50%  { opacity: 0.85; background: rgba(0, 255, 65, 0.10); }
+    100% { opacity: 1;    background: #181818; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .px-cell, .px-cell.px-accent { animation-duration: .05s; }
+}
 .hdr-tag {
     display: inline-flex;
     align-items: center;
@@ -391,6 +609,36 @@ html[data-theme="light"] .header h1.machine-name[data-mode="font"] {
 }
 .header h1.machine-name[data-mode="font"] .mn-low {
     font-size: calc(var(--name-size) * 2 / 3);
+}
+/* Слово целиком — не разрывается внутри (mn-cap + mn-low вместе). */
+.header h1.machine-name[data-mode="font"] .mn-word {
+    display: inline-block;
+    white-space: nowrap;
+}
+/* Многострочное имя (RU): каждое слово — на своей строке, центрировано. */
+.header h1.machine-name[data-mode="font"].multiline {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: calc(var(--name-size) * 0.03);   /* межстрочный интервал — вдвое меньше */
+    line-height: 0.82;
+    letter-spacing: 0.10em;               /* немного шире */
+}
+/* Многострочное имя крупнее (влезает в ширину, т.к. в две строки). */
+.header h1.machine-name[data-mode="font"].multiline { --name-size: clamp(96px, 18vw, 300px); }
+/* В многострочном режиме градиент снимаем с h1 и вешаем на КАЖДОЕ слово —
+   чтобы оба слова имели одинаковый градиент сверху вниз (а не одно светлое / другое тёмное). */
+.header h1.machine-name[data-mode="font"].multiline {
+    background-image: none;
+    -webkit-text-fill-color: initial;
+}
+.header h1.machine-name[data-mode="font"].multiline .mn-word {
+    background-image: var(--gradient);
+    background-size: 100% 100%;
+    -webkit-background-clip: text;
+            background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
 }
 
 /* Обёртка имени: двойная тень и лёгкое неон-свечение. */
@@ -1149,6 +1397,50 @@ html[data-theme="light"] .tracks-table td { border-right: 1px solid #e0e0e0; }
     font-style: italic;
 }
 
+/* Бейдж «NEW» в списке музыки — жёлтый праздничный маркер в стиле spy-OS. */
+.track-title-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.track-new {
+    display: inline-block;
+    padding: 1px 6px;
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    color: #1a0f00;
+    background: var(--neon-amber);
+    border: 1px solid var(--neon-amber);
+    box-shadow:
+        0 0 0 1px rgba(0,0,0,.6) inset,
+        0 0 8px rgba(255, 186, 67, 0.55),
+        0 0 16px rgba(255, 186, 67, 0.25);
+    text-shadow: 0 0 2px rgba(255, 255, 255, 0.4);
+    transform: translateY(-1px);
+    animation: track-new-pulse 1.6s ease-in-out infinite;
+}
+@keyframes track-new-pulse {
+    0%, 100% {
+        box-shadow:
+            0 0 0 1px rgba(0,0,0,.6) inset,
+            0 0 6px rgba(255, 186, 67, 0.45),
+            0 0 14px rgba(255, 186, 67, 0.2);
+        filter: brightness(1);
+    }
+    50% {
+        box-shadow:
+            0 0 0 1px rgba(0,0,0,.6) inset,
+            0 0 12px rgba(255, 186, 67, 0.85),
+            0 0 24px rgba(255, 186, 67, 0.55);
+        filter: brightness(1.15);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .track-new { animation: none; }
+}
+
 /* Разворачиваемое описание в колонке «Описание». */
 .tracks-table td.desc-cell {
     position: relative;
@@ -1769,6 +2061,104 @@ html[data-theme="light"] .price-item:hover .price-icon {
     color: var(--fg-dim);
 }
 
+/* Фото-карусель в окне «О себе» — визуальный стиль spy-OS. */
+.about-carousel {
+    margin: 18px 0 0;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    padding: 10px 12px 12px;
+}
+.about-car-head {
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    color: var(--fg-dim);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+.about-car-label { color: var(--neon-amber, var(--fg-dim)); }
+/* Рамка карусели — усреднённая пропорция 4:3 (между горизонтальными 16:9 и портретными 3:4).
+   При max-height ограничиваем высоту, чтобы на широких окнах карусель не «разрасталась» вверх.
+   object-fit: contain гарантирует, что фото отображается целиком — без обрезки. */
+.about-car-stage {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    max-height: 460px;
+    background: #000;
+    border: 1px solid var(--border-soft);
+    overflow: hidden;
+}
+.about-car-track { position: absolute; inset: 0; }
+.about-car-slide {
+    position: absolute; inset: 0;
+    margin: 0;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .35s ease;
+}
+.about-car-slide.active { opacity: 1; visibility: visible; }
+.about-car-slide img {
+    width: 100%; height: 100%;
+    object-fit: contain; display: block;
+    /* Лёгкий радиальный виньет по фону — чтобы боковые чёрные поля выглядели как часть сцены. */
+    background:
+        radial-gradient(ellipse at center, rgba(255,255,255,0.04), transparent 70%),
+        #000;
+}
+.about-car-slide figcaption {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    padding: 4px 8px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--fg);
+    background: linear-gradient(to top, rgba(0,0,0,.85), transparent);
+}
+.about-car-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 32px; height: 48px;
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid var(--border);
+    color: var(--fg);
+    font-size: 20px;
+    font-family: var(--mono);
+    cursor: pointer;
+    z-index: 2;
+    transition: color .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+.about-car-nav.prev { left: 8px; }
+.about-car-nav.next { right: 8px; }
+.about-car-nav:hover {
+    color: var(--neon-cyan);
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 0 1px var(--neon-cyan), 0 0 8px var(--neon-cyan);
+}
+.about-car-dots {
+    display: flex; justify-content: center; gap: 6px;
+    margin-top: 8px;
+}
+.about-car-dot {
+    width: 10px; height: 10px;
+    padding: 0;
+    background: transparent;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: background .15s ease, border-color .15s ease;
+}
+.about-car-dot.active {
+    background: var(--fg);
+    border-color: var(--fg);
+}
+.about-car-dot:hover { border-color: var(--neon-cyan); }
+@media (max-width: 700px) {
+    .about-car-nav { width: 28px; height: 40px; font-size: 16px; }
+}
+
 /* Досье — хроника. */
 .about-full { display: flex; flex-direction: column; gap: 14px; }
 .about-row {
@@ -1869,13 +2259,15 @@ html[data-theme="light"] .price-item:hover .price-icon {
 }
 .reviews-track {
     position: relative;
-    min-height: 240px;
+    /* Высота трека под рамку 16:9 при типовой ширине окна «Отзывы». */
+    min-height: 400px;
 }
 .review-slide {
     position: absolute;
     inset: 0;
     display: grid;
-    grid-template-columns: 200px 1fr;
+    /* Широкая колонка под 16:9: ~60% ширины слайда, текст — оставшиеся ~40%. */
+    grid-template-columns: minmax(520px, 1.6fr) 1fr;
     gap: 18px;
     padding: 14px;
     border: 1px solid var(--border);
@@ -1891,8 +2283,10 @@ html[data-theme="light"] .price-item:hover .price-icon {
 }
 .review-frame {
     position: relative;
-    aspect-ratio: 1 / 1;
+    /* Широкая рамка 16:9 под горизонтальные фото. */
+    aspect-ratio: 16 / 9;
     width: 100%;
+    margin: 0 auto;
     border: 1px solid var(--border);
     background: #000;
     overflow: hidden;
@@ -1911,9 +2305,15 @@ html[data-theme="light"] .price-item:hover .price-icon {
 .review-img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    /* Фото показываем целиком (даже если пропорции не точно 16:9) — пусть масштаб подстроится под рамку.
+       Свободные поля заливаются чёрным с лёгким виньетом — в стиле spy-OS. */
+    object-fit: contain;
+    object-position: center;
     image-rendering: auto;
     display: block;
+    background:
+        radial-gradient(ellipse at center, rgba(255,255,255,0.04), transparent 70%),
+        #000;
 }
 .review-copy { display: flex; flex-direction: column; gap: 6px; }
 .review-name { margin: 0; font-family: 'Cairo Pixel', monospace; font-size: 18px; }
@@ -2028,11 +2428,16 @@ html[data-theme="light"] .price-item:hover .price-icon {
 }
 
 /* Мобильный layout: картинка сверху, текст внизу. */
-@media (max-width: 700px) {
+@media (max-width: 900px) {
+    /* На узких ширинах переходим на вертикальный layout: фото сверху (16:9), текст снизу. */
     .reviews-carousel { padding: 10px 12px 36px; }
-    .reviews-track { min-height: 360px; }
+    .reviews-track { min-height: 460px; }
     .review-slide { grid-template-columns: 1fr; }
-    .review-frame { max-width: 220px; margin: 0 auto; }
+    .review-frame {
+        width: 100%;
+        margin: 0 auto;
+        aspect-ratio: 16 / 9;
+    }
     .review-nav.prev { left: 4px; }
     .review-nav.next { right: 4px; }
 }

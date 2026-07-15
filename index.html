@@ -4,8 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kenny Lee | Композитор, Саунд-дизайнер</title>
+    <meta name="description" content="YFRO — композитор, саунд-дизайнер и продюсер из СПб.">
     <link rel="icon" href="assets/img/logo.png" type="image/png">
-    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="stylesheet" href="assets/css/main.css?v=8">
+    <!-- i18n-ядро подключаем РАНЬШЕ data.js и app.js — чтобы t() было доступно всюду. -->
+    <!-- ?v=N — cache-busting: меняй номер при правках JS/CSS, чтобы браузер не брал старое из кэша. -->
+    <script src="assets/js/i18n.js?v=4"></script>
 </head>
 <body class="is-booting">
 
@@ -46,33 +50,59 @@
         <span class="hdr-corner bl" aria-hidden="true"></span>
         <span class="hdr-corner br" aria-hidden="true"></span>
 
-        <!-- Технические метки по бокам -->
-        <div class="hdr-meta hdr-meta-left" aria-hidden="true">
-            <span class="hdr-tag"><span class="led"></span> SYS // ONLINE</span>
-            <span class="hdr-tag mono">ID :: YFRO-001</span>
-            <span class="hdr-tag mono">SPB · RU</span>
+        <!-- Переключатель языка -->
+        <div class="hdr-meta hdr-meta-left">
+            <div class="lang-switch" data-current="ru">
+                <span class="lang-switch-label" aria-hidden="true" data-i18n="lang.label">ЯЗЫК СИСТЕМЫ</span>
+                <div class="lang-switch-btns" role="group" data-i18n-attr='{"aria-label":"lang.aria"}' aria-label="Переключение языка">
+                    <button class="lang-btn active" type="button" data-lang="ru" aria-pressed="true" data-i18n-attr='{"aria-label":"lang.ruAria"}' aria-label="Русский">
+                        <svg class="lang-flag" viewBox="0 0 9 6" width="18" height="12" aria-hidden="true" focusable="false">
+                            <rect width="9" height="2" y="0" fill="currentColor" opacity="1"/>
+                            <rect width="9" height="2" y="2" fill="currentColor" opacity="0.55"/>
+                            <rect width="9" height="2" y="4" fill="currentColor" opacity="0.25"/>
+                        </svg>
+                        <span>RU</span>
+                    </button>
+                    <button class="lang-btn" type="button" data-lang="en" data-href="en.html" aria-pressed="false" data-i18n-attr='{"aria-label":"lang.enAria"}' aria-label="English">
+                        <svg class="lang-flag" viewBox="0 0 12 8" width="18" height="12" aria-hidden="true" focusable="false">
+                            <rect width="12" height="8" fill="currentColor" opacity="0.18"/>
+                            <path d="M0 0 L12 8 M12 0 L0 8" stroke="currentColor" stroke-width="1" opacity="0.6"/>
+                            <path d="M6 0 V8 M0 4 H12" stroke="currentColor" stroke-width="2" opacity="1"/>
+                        </svg>
+                        <span>EN</span>
+                    </button>
+                </div>
+            </div>
         </div>
-        <div class="hdr-meta hdr-meta-right" aria-hidden="true">
-            <span class="hdr-tag mono">v1.0 / yellframe.os</span>
-            <span class="hdr-tag mono">CH 01 — STUDIO</span>
-            <span class="hdr-tag"><span class="led led-amber"></span> REC READY</span>
+        <div class="hdr-meta hdr-meta-right">
+            <span class="hdr-tag mono" aria-hidden="true">v1.0 / yellframe.os</span>
+            <span class="hdr-tag mono" aria-hidden="true">CH 01 — STUDIO</span>
+            <!-- Кликабельные метки-кнопки: ведут на Linktree (замени href на свой). -->
+            <a class="hdr-tag hdr-link mono" href="https://linktr.ee/" target="_blank" rel="noopener"><span class="hdr-link-arrow" aria-hidden="true">› </span>MAKE MUSIC</a>
+            <a class="hdr-tag hdr-link mono" href="https://linktr.ee/" target="_blank" rel="noopener"><span class="hdr-link-arrow" aria-hidden="true">› </span>CINEMATICS</a>
+            <a class="hdr-tag hdr-link mono" href="https://linktr.ee/" target="_blank" rel="noopener"><span class="hdr-link-arrow" aria-hidden="true">› </span>SOUND-DESIGN</a>
+            <a class="hdr-tag hdr-link mono" href="https://linktr.ee/" target="_blank" rel="noopener"><span class="hdr-link-arrow" aria-hidden="true">› </span>CREATE</a>
+            <a class="hdr-tag hdr-link mono" href="https://linktr.ee/" target="_blank" rel="noopener"><span class="hdr-link-arrow" aria-hidden="true">› </span>LISTEN MY MUSIC</a>
+            <span class="hdr-tag mono" aria-hidden="true">10+ YEARS EXP</span>
+            <a class="hdr-tag hdr-link mono" href="https://linktr.ee/" target="_blank" rel="noopener"><span class="hdr-link-arrow" aria-hidden="true">› </span>MIXING AND MASTERING</a>
+            <span class="hdr-tag"><span class="led led-amber"></span> <span data-i18n="header.recReady">REC READY</span></span>
         </div>
 
         <div class="header-left">
             <p class="hdr-eyebrow" aria-hidden="true">
                 <span class="hdr-eyebrow-bar"></span>
-                <span> · ЗВУК С ХАРАКТЕРОМ · </span>
+                <span data-i18n="header.eyebrow"> · ЗВУК С ХАРАКТЕРОМ · </span>
                 <span class="hdr-eyebrow-bar"></span>
             </p>
             <span class="machine-name-wrap">
                 <h1 class="machine-name" data-mode="font" aria-label="Kenny Lee"><span class="mn-cap">K</span><span class="mn-low">enny</span> <span class="mn-cap">L</span><span class="mn-low">ee</span></h1>
             </span>
             <p class="tagline">
-                <span>Звучи уверенно.</span>
+                <span data-i18n="header.tagline1">Звучи уверенно.</span>
                 <span class="tagline-sep" aria-hidden="true">■</span>
-                <span>Звучи уникально.</span>
+                <span data-i18n="header.tagline2">Звучи уникально.</span>
                 <span class="tagline-sep" aria-hidden="true">■</span>
-                <span>Звучи потрясающе.</span>
+                <span data-i18n="header.tagline3">Звучи потрясающе.</span>
             </p>
             <div class="hdr-cta" aria-hidden="true">
                 <span class="hdr-cta-arrow">▾</span>
@@ -85,12 +115,12 @@
     <!-- ===== Терминальный лог-бар ===== -->
     <div class="term-log" id="term-log" aria-hidden="true">
         <span class="term-prompt">&gt;</span>
-        <span class="term-line" id="term-line">booting yellframe.os ...</span>
+        <span class="term-line" id="term-line" data-i18n="termLog.boot">booting yellframe.os ...</span>
         <span class="term-cursor">_</span>
     </div>
 
     <!-- ===== Док главного меню (spy-OS launcher) ===== -->
-    <section class="app-dock" id="app-dock" aria-label="Главное меню">
+    <section class="app-dock" id="app-dock" data-i18n-attr='{"aria-label":"dock.ariaMenu"}' aria-label="Главное меню">
         <div class="dock-arrows" aria-hidden="true"></div>
         <div class="dock-frame">
             <span class="dock-corner tl" aria-hidden="true"></span>
@@ -98,55 +128,55 @@
             <span class="dock-corner bl" aria-hidden="true"></span>
             <span class="dock-corner br" aria-hidden="true"></span>
             <div class="dock-grid">
-                <button class="dock-btn" id="dock-music" data-target="win-audio" aria-label="Открыть музыку">
+                <button class="dock-btn" id="dock-music" data-target="win-audio" data-i18n-attr='{"aria-label":"dock.music.aria"}' aria-label="Открыть музыку">
                     <span class="dock-ico" aria-hidden="true">
                         <svg viewBox="0 0 24 24" focusable="false"><path fill="currentColor" d="M4 12h4v2H4zm-2 2h2v4H2zm2 4h4v2H4zM8 6h2v12H8zm10 0h2v12h-2zm-6 8h2v4h-2zm2-2h4v2h-4zm0 6h4v2h-4zM10 4h8v2h-8z"/></svg>
                     </span>
-                    <span class="dock-label">Музыка</span>
-                    <span class="dock-caption">tracks.dat</span>
+                    <span class="dock-label" data-i18n="dock.music.label">Музыка</span>
+                    <span class="dock-caption" data-i18n="dock.music.caption">tracks.dat</span>
                 </button>
-                <button class="dock-btn" id="dock-video" data-target="win-video" aria-label="Открыть видео">
+                <button class="dock-btn" id="dock-video" data-target="win-video" data-i18n-attr='{"aria-label":"dock.video.aria"}' aria-label="Открыть видео">
                     <span class="dock-ico" aria-hidden="true">
                         <svg viewBox="0 0 24 24" focusable="false"><path fill="currentColor" d="M3 3h18v18H3zm2 2v2h2V5zm4 0v6h6V5zm8 0v2h2V5zm2 4h-2v2h2zm0 4h-2v2h2zm0 4h-2v2h2zm-4 2v-6H9v6zm-8 0v-2H5v2zm-2-4h2v-2H5zm0-4h2V9H5z"/></svg>
                     </span>
-                    <span class="dock-label">Видео</span>
-                    <span class="dock-caption">clips.bin</span>
+                    <span class="dock-label" data-i18n="dock.video.label">Видео</span>
+                    <span class="dock-caption" data-i18n="dock.video.caption">clips.bin</span>
                 </button>
-                <button class="dock-btn" id="dock-prices" data-target="win-prices" aria-label="Открыть прайс">
+                <button class="dock-btn" id="dock-prices" data-target="win-prices" data-i18n-attr='{"aria-label":"dock.prices.aria"}' aria-label="Открыть прайс">
                     <span class="dock-ico" aria-hidden="true">
                         <svg viewBox="0 0 24 24" focusable="false"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0-14 0m18 11l-6-6"/><path d="M12 7H9.5a1.5 1.5 0 0 0 0 3h1a1.5 1.5 0 0 1 0 3H8m2 0v1m0-8v1"/></g></svg>
                     </span>
-                    <span class="dock-label">Прайс</span>
-                    <span class="dock-caption">price.cfg</span>
+                    <span class="dock-label" data-i18n="dock.prices.label">Прайс</span>
+                    <span class="dock-caption" data-i18n="dock.prices.caption">price.cfg</span>
                 </button>
-                <button class="dock-btn" id="dock-about" data-target="win-about" aria-label="Открыть «О себе»">
+                <button class="dock-btn" id="dock-about" data-target="win-about" data-i18n-attr='{"aria-label":"dock.about.aria"}' aria-label="Открыть «О себе»">
                     <span class="dock-ico" aria-hidden="true">
                         <svg viewBox="0 0 24 24" focusable="false"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.042 19.933A9.8 9.8 0 0 1 7.7 19L3 20l1.3-3.9C1.976 12.663 2.874 8.228 6.4 5.726c3.526-2.501 8.59-2.296 11.845.48c2.127 1.814 3.052 4.36 2.694 6.808M15 19l2 2l4-4"/></svg>
                     </span>
-                    <span class="dock-label">О себе</span>
-                    <span class="dock-caption">about.txt</span>
+                    <span class="dock-label" data-i18n="dock.about.label">О себе</span>
+                    <span class="dock-caption" data-i18n="dock.about.caption">about.txt</span>
                 </button>
-                <button class="dock-btn" id="dock-manifest" data-target="win-manifest" aria-label="Открыть манифест">
+                <button class="dock-btn" id="dock-manifest" data-target="win-manifest" data-i18n-attr='{"aria-label":"dock.manifest.aria"}' aria-label="Открыть манифест">
                     <span class="dock-ico" aria-hidden="true">
                         <svg viewBox="0 0 24 24" focusable="false"><path fill="currentColor" d="M12 7h1v1h-2V7h-1V6H8v1H6V6h1V5h4v1h1zm1 6v1h-3v-1H8v-1h3v1zM8 8h2v2H8zm6 1h2v2h-2zm5-1v2h-1V9h-1V8h-2V7h3v1zm-5 7v2h-1v1h-2v2h-1v2H9v1H5v-1H4v-6h1v-1h1v3h2v-1h2v-1h2v-1z"/><path fill="currentColor" d="M23 9v6h-1v2h-1v2h-1v1h-1v1h-2v1h-2v1h-4v-2h4v-1h2v-1h1v-1h1v-1h1v-2h1V9h-1V7h-1V6h-1V5h-1V4h-2V3H9v1H7v1H6v1H5v1H4v2H3v5h1v1H3v1H2v-1H1V9h1V7h1V5h1V4h1V3h2V2h2V1h6v1h2v1h2v1h1v1h1v2h1v2z"/></svg>
                     </span>
-                    <span class="dock-label">Манифест</span>
-                    <span class="dock-caption">manifest.md</span>
+                    <span class="dock-label" data-i18n="dock.manifest.label">Манифест</span>
+                    <span class="dock-caption" data-i18n="dock.manifest.caption">manifest.md</span>
                 </button>
-                <button class="dock-btn" id="dock-reviews" data-target="win-reviews" aria-label="Открыть отзывы">
+                <button class="dock-btn" id="dock-reviews" data-target="win-reviews" data-i18n-attr='{"aria-label":"dock.reviews.aria"}' aria-label="Открыть отзывы">
                     <span class="dock-ico" aria-hidden="true">
                         <svg viewBox="0 0 2048 2048" focusable="false"><path fill="currentColor" d="M958 1328q101 40 184 106t142 153t91 187t33 210v64h-128v-64q0-119-45-224t-124-183t-183-123t-224-46q-119 0-224 45t-183 124t-123 183t-46 224v64H0v-64q0-109 32-210t92-187t142-152t184-107q-45-31-81-72t-61-88t-38-100t-14-108q0-93 35-174t96-142t142-96t175-36q93 0 174 35t142 96t96 142t36 175q0 55-13 107t-39 100t-61 89t-81 72m-254-48q66 0 124-25t101-68t69-102t26-125t-25-124t-69-101t-102-69t-124-26t-124 25t-102 69t-69 102t-25 124t25 124t68 102t102 69t125 25M2048 0v1024h-256l-384 384v-384h-128V896h256v203l203-203h181V128H640v230q-32 4-64 10t-64 18V0z"/></svg>
                     </span>
-                    <span class="dock-label">Отзывы</span>
-                    <span class="dock-caption">feedback.log</span>
+                    <span class="dock-label" data-i18n="dock.reviews.label">Отзывы</span>
+                    <span class="dock-caption" data-i18n="dock.reviews.caption">feedback.log</span>
                 </button>
             </div>
-            <p class="dock-hint" aria-hidden="true">// SELECT MODULE //</p>
+            <p class="dock-hint" aria-hidden="true" data-i18n="dock.hint">// SELECT MODULE //</p>
         </div>
     </section>
 
     <!-- Кнопка «назад» к главному меню (показывается, когда открыто окно) -->
-    <button class="dock-back" id="dock-back" type="button" aria-label="Вернуться в меню">◂ MENU</button>
+    <button class="dock-back" id="dock-back" type="button" data-i18n-attr='{"aria-label":"dock.backAria"}' aria-label="Вернуться в меню" data-i18n="dock.back">◂ MENU</button>
 
     <!-- ===== «Рабочий стол» с окнами ===== -->
     <main class="desktop">
@@ -155,19 +185,19 @@
         <section class="window" id="win-audio">
             <div class="window-titlebar">
                 <span class="icon"></span>
-                <span class="title">📁 Список музыкальных композиций</span>
+                <span class="title" data-i18n="window.audio">📁 Список музыкальных композиций</span>
                 <span class="win-btns">
-                    <button class="win-btn" data-action="min" title="Свернуть">_</button>
-                    <button class="win-btn" data-action="close" title="Закрыть">×</button>
+                    <button class="win-btn" data-action="min" data-i18n-attr='{"title":"window.ariaMin"}' title="Свернуть">_</button>
+                    <button class="win-btn" data-action="close" data-i18n-attr='{"title":"window.ariaClose"}' title="Закрыть">×</button>
                 </span>
             </div>
             <div class="window-toolbar genre-filters">
-                <button class="active" data-genre="all">Все</button>
-                <button data-genre="pop">Pop / Electronica</button>
-                <button data-genre="rock">Rock / Metal</button>
-                <button data-genre="rap">Rap / Hip-Hop</button>
-                <button data-genre="hard">Hard Electronica</button>
-                <input type="search" id="tracks-search" placeholder="Поиск...">
+                <button class="active" data-genre="all" data-i18n="filters.all">Все</button>
+                <button data-genre="pop"  data-i18n="filters.pop">Pop / Electronica</button>
+                <button data-genre="rock" data-i18n="filters.rock">Rock / Metal</button>
+                <button data-genre="rap"  data-i18n="filters.rap">Rap / Hip-Hop</button>
+                <button data-genre="hard" data-i18n="filters.hard">Hard Electronica</button>
+                <input type="search" id="tracks-search" data-i18n-attr='{"placeholder":"filters.searchPlaceholder"}' placeholder="Поиск...">
             </div>
             <div class="window-body">
                 <table class="tracks-table">
@@ -181,7 +211,7 @@
         <section class="window" id="win-video">
             <div class="window-titlebar">
                 <span class="icon"></span>
-                <span class="title">🎬 Видео клипы</span>
+                <span class="title" data-i18n="window.video">🎬 Видео клипы</span>
                 <span class="win-btns">
                     <button class="win-btn" data-action="min">_</button>
                     <button class="win-btn" data-action="close">×</button>
@@ -196,7 +226,7 @@
         <section class="window" id="win-prices">
             <div class="window-titlebar">
                 <span class="icon"></span>
-                <span class="title">💲 Прайс-лист</span>
+                <span class="title" data-i18n="window.prices">💲 Прайс-лист</span>
                 <span class="win-btns">
                     <button class="win-btn" data-action="min">_</button>
                     <button class="win-btn" data-action="close">×</button>
@@ -206,10 +236,11 @@
         </section>
 
         <!-- ОКНО: Манифест -->
+        <!-- ОКНО: Манифест -->
         <section class="window" id="win-manifest">
             <div class="window-titlebar">
                 <span class="icon"></span>
-                <span class="title">☻ Манифест</span>
+                <span class="title" data-i18n="window.manifest">☻ Манифест</span>
                 <span class="win-btns">
                     <button class="win-btn" data-action="min">_</button>
                     <button class="win-btn" data-action="close">×</button>
@@ -222,7 +253,7 @@
         <section class="window" id="win-reviews">
             <div class="window-titlebar">
                 <span class="icon"></span>
-                <span class="title">☷ Отзывы</span>
+                <span class="title" data-i18n="window.reviews">☷ Отзывы</span>
                 <span class="win-btns">
                     <button class="win-btn" data-action="min">_</button>
                     <button class="win-btn" data-action="close">×</button>
@@ -235,7 +266,7 @@
         <section class="window" id="win-about">
             <div class="window-titlebar">
                 <span class="icon"></span>
-                <span class="title">ℹ О себе</span>
+                <span class="title" data-i18n="window.about">ℹ О себе</span>
                 <span class="win-btns">
                     <button class="win-btn" data-action="min">_</button>
                     <button class="win-btn" data-action="close">×</button>
@@ -251,7 +282,7 @@
             <a href="https://t.me/yefraym">Telegram: @yefraym</a>
             <a href="mailto:yfro@proton.me">E-mail: yfro@proton.me</a>
         </div>
-        <p>© 2025 Kenny Lee. Все права защищены.</p>
+        <p data-i18n="footer.copyright">© 2025 Kenny Lee. Все права защищены.</p>
     </footer>
 </div>
 
@@ -275,7 +306,7 @@
         <div class="project-modal-head">
             <span class="project-modal-crumbs" aria-hidden="true">▸ PROJECT</span>
             <h2 class="project-modal-title" id="project-pop-title"></h2>
-            <button class="project-modal-close" type="button" aria-label="Закрыть проект">×</button>
+            <button class="project-modal-close" type="button" data-i18n-attr='{"aria-label":"project.close"}' aria-label="Закрыть проект">×</button>
         </div>
         <p class="project-modal-desc" id="project-pop-desc"></p>
         <div class="project-modal-grid" id="project-pop-body"></div>
@@ -288,7 +319,7 @@
         <span class="icon"></span>
         <span class="title" id="cover-pop-title">cover.bin</span>
         <span class="win-btns">
-            <button class="win-btn" type="button" id="cover-pop-close" aria-label="Закрыть">×</button>
+            <button class="win-btn" type="button" id="cover-pop-close" data-i18n-attr='{"aria-label":"window.ariaClose"}' aria-label="Закрыть">×</button>
         </span>
     </div>
     <div class="cover-pop-body">
@@ -302,7 +333,7 @@
 
 <!-- ===== Нижний плеер ===== -->
 <div class="player-bar" id="player-bar">
-    <button class="pn-cover" id="pl-cover" type="button" aria-label="Показать обложку" hidden>
+    <button class="pn-cover" id="pl-cover" type="button" data-i18n-attr='{"aria-label":"player.showCover"}' aria-label="Показать обложку" hidden>
         <img id="pl-cover-img" alt="">
     </button>
     <div class="player-now">
@@ -311,9 +342,9 @@
     </div>
     <div class="player-controls">
         <div class="btns">
-            <button id="pl-prev" title="Предыдущий">⏮</button>
-            <button id="pl-play" title="Воспроизведение / пауза">▶</button>
-            <button id="pl-next" title="Следующий">⏭</button>
+            <button id="pl-prev" data-i18n-attr='{"title":"player.prev"}' title="Предыдущий">⏮</button>
+            <button id="pl-play" data-i18n-attr='{"title":"player.playPause"}' title="Воспроизведение / пауза">▶</button>
+            <button id="pl-next" data-i18n-attr='{"title":"player.next"}' title="Следующий">⏭</button>
         </div>
         <div class="seek">
             <span id="pl-cur">0:00</span>
@@ -323,11 +354,14 @@
     </div>
     <div class="player-extra">
         🔊 <input type="range" id="pl-vol" min="0" max="1" value="0.7" step="0.01">
-        <button id="pl-close" title="Скрыть плеер">×</button>
+        <button id="pl-close" data-i18n-attr='{"title":"player.hide"}' title="Скрыть плеер">×</button>
     </div>
 </div>
 
-<script src="assets/js/data.js"></script>
-<script src="assets/js/app.js"></script>
+<!-- ===== Пиксельный оверлей для переключения языка (разметку ячеек вставляет JS) ===== -->
+<div class="pixel-overlay" id="pixel-overlay" aria-hidden="true"></div>
+
+<script src="assets/js/data.js?v=4"></script>
+<script src="assets/js/app.js?v=4"></script>
 </body>
 </html>

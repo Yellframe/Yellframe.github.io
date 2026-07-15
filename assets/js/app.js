@@ -315,12 +315,14 @@ function buildWindow({ id, title, toolbar = '', body = '' }) {
 // ============================================================
 // Таблица треков: сортировка, ресайз колонок, фильтр, поиск
 // ============================================================
+// Колонки таблицы. label — ключ i18n, переводится в buildTracksHeader/render через t().
 const COLUMNS = [
-    { key: 'artist',      label: 'Артист',     width: 140 },
-    { key: 'title',       label: 'Название',   width: 240 },
-    { key: 'description', label: 'Описание',   width: 320 },
-    { key: 'genre',       label: 'Жанр',       width: 110 },
-    { key: 'duration',    label: 'Длительность', width: 110, align: 'right' },
+    { key: 'artist',      labelKey: 'tracks.colArtist',      width: 140 },
+    { key: 'title',       labelKey: 'tracks.colTitle',       width: 240 },
+    { key: 'description', labelKey: 'tracks.colDescription', width: 320 },
+    { key: 'year',        labelKey: 'tracks.colYear',        width: 80,  align: 'right' },
+    { key: 'genre',       labelKey: 'tracks.colGenre',       width: 110 },
+    { key: 'duration',    labelKey: 'tracks.colDuration',    width: 110, align: 'right' },
 ];
 
 let sortState = { key: 'title', dir: 1 };
@@ -334,46 +336,63 @@ function renderTracksTable() {
     if (!tbody) return;
 
     let rows = TRACKS.slice();
+    const lang = (window.I18N && window.I18N.current) || 'ru';
 
     if (activeGenre !== 'all') {
-        rows = rows.filter(t => t.genre.split('/').includes(activeGenre));
+        rows = rows.filter(track => track.genre.split('/').includes(activeGenre));
     }
     if (searchQuery) {
         const q = searchQuery.toLowerCase();
-        rows = rows.filter(t =>
-            t.title.toLowerCase().includes(q) ||
-            t.artist.toLowerCase().includes(q) ||
-            t.description.toLowerCase().includes(q));
+        rows = rows.filter(track =>
+            tr(track.title).toLowerCase().includes(q) ||
+            tr(track.artist).toLowerCase().includes(q) ||
+            tr(track.description).toLowerCase().includes(q) ||
+            String(track.year || '').toLowerCase().includes(q));
     }
 
     const { key, dir } = sortState;
     rows.sort((a, b) => {
-        const va = a[key], vb = b[key];
+        let va = a[key], vb = b[key];
+        // Год — числовая сортировка; пустые значения уезжают в конец.
+        if (key === 'year') {
+            const na = Number(va), nb = Number(vb);
+            const aEmpty = !Number.isFinite(na);
+            const bEmpty = !Number.isFinite(nb);
+            if (aEmpty && bEmpty) return 0;
+            if (aEmpty) return 1;
+            if (bEmpty) return -1;
+            return (na - nb) * dir;
+        }
         if (typeof va === 'number') return (va - vb) * dir;
-        return String(va).localeCompare(String(vb), 'ru') * dir;
+        // Локализованное сравнение по текущему языку.
+        return String(tr(va)).localeCompare(String(tr(vb)), lang) * dir;
     });
 
     if (!rows.length) {
-        tbody.innerHTML = `<tr><td colspan="${COLUMNS.length}" class="tracks-empty">Ничего не найдено</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="${COLUMNS.length}" class="tracks-empty">${t('search.empty')}</td></tr>`;
         return;
     }
 
-    tbody.innerHTML = rows.map(t => {
-        const idx = TRACKS.indexOf(t);
+    tbody.innerHTML = rows.map(track => {
+        const idx = TRACKS.indexOf(track);
         const cls = (player.currentIndex === idx && !player.audio.paused) ? 'playing' : '';
         const expanded = expandedDescriptions.has(idx);
         const arrow = expanded ? '▲' : '▼';
         const descCls = expanded ? 'desc-cell expanded' : 'desc-cell';
+        const newBadge = track.isNew
+            ? `<span class="track-new" aria-label="${t('tracks.badgeNewAria')}">${t('tracks.badgeNew')}</span>`
+            : '';
         return `
-        <tr class="${cls}" data-idx="${idx}">
-            <td>${t.artist}</td>
-            <td>${t.title}</td>
+        <tr class="${cls}${track.isNew ? ' is-new' : ''}" data-idx="${idx}">
+            <td>${tr(track.artist)}</td>
+            <td><span class="track-title-wrap">${tr(track.title)}${newBadge}</span></td>
             <td class="${descCls}">
-                <span class="desc-text">${t.description}</span>
-                <button type="button" class="desc-toggle" data-idx="${idx}" aria-expanded="${expanded}" aria-label="Развернуть описание">${arrow}</button>
+                <span class="desc-text">${tr(track.description)}</span>
+                <button type="button" class="desc-toggle" data-idx="${idx}" aria-expanded="${expanded}" aria-label="${t('tracks.expandAria')}">${arrow}</button>
             </td>
-            <td>${t.genre}</td>
-            <td style="text-align:right">${fmtTime(t.duration)}</td>
+            <td style="text-align:right">${track.year || t('tracks.yearEmpty')}</td>
+            <td>${track.genre}</td>
+            <td style="text-align:right">${fmtTime(track.duration)}</td>
         </tr>`;
     }).join('');
 
@@ -416,7 +435,7 @@ function buildTracksHeader() {
     const thead = $('#tracks-thead');
     thead.innerHTML = '<tr>' + COLUMNS.map((c, i) => `
         <th data-key="${c.key}" style="width:${c.width}px">
-            <span class="th-label">${c.label}</span>
+            <span class="th-label">${t(c.labelKey)}</span>
             <span class="sort-ind"></span>
             ${i < COLUMNS.length - 1 ? '<span class="col-resizer"></span>' : ''}
         </th>`).join('') + '</tr>';
@@ -499,11 +518,15 @@ function openCoverFor(track) {
     // Отменяем отложенное скрытие от предыдущего closeCoverPop — оно может скрыть уже открытый попап.
     if (_coverHideTimer) { clearTimeout(_coverHideTimer); _coverHideTimer = null; }
     const img = $('#cover-pop-img');
+    const trackTitle  = tr(track.title);
+    const trackArtist = tr(track.artist);
     img.src = track.cover || DEFAULT_COVER;
-    img.alt = `${track.artist} — ${track.title}`;
-    $('#cover-pop-artist').textContent = track.artist || '';
-    $('#cover-pop-track').textContent  = track.title  || '';
-    $('#cover-pop-title').textContent  = (track.title || 'cover').toLowerCase().replace(/\s+/g, '_') + '.bin';
+    img.alt = `${trackArtist} — ${trackTitle}`;
+    $('#cover-pop-artist').textContent = trackArtist || '';
+    $('#cover-pop-track').textContent  = trackTitle  || '';
+    // Имя «файла» — латиница берётся из EN-версии (если есть), иначе — из текущего языка.
+    const slug = (typeof track.title === 'object' && track.title.en) ? track.title.en : trackTitle;
+    $('#cover-pop-title').textContent  = ((slug || 'cover') + '').toLowerCase().replace(/\s+/g, '_') + '.bin';
 
     pop.hidden = false;
     pop.setAttribute('aria-hidden', 'false');
@@ -616,16 +639,16 @@ const player = {
         if (i < 0 || i >= TRACKS.length) return;
         // Пользователь запустил своё аудио — глушим фоновую петлю.
         ambience.stop();
-        const t = TRACKS[i];
+        const track = TRACKS[i];
         this.currentIndex = i;
-        this.audio.src = t.src;
+        this.audio.src = track.src;
         this.audio.play().catch(err => console.warn('play failed', err));
-        $('#pl-title').textContent = t.title;
-        $('#pl-artist').textContent = t.artist;
+        $('#pl-title').textContent = tr(track.title);
+        $('#pl-artist').textContent = tr(track.artist);
         this.bar.classList.add('visible');
         // Обложка: обновляем содержимое, не закрывая попап — иначе будет рисоваться мигание при переключении треков.
-        openCoverFor(t);
-        if (typeof logEvent === 'function') logEvent(`play ${t.artist} — ${t.title} ... streaming`);
+        openCoverFor(track);
+        if (typeof logEvent === 'function') logEvent(`play ${tr(track.artist)} — ${tr(track.title)} ... streaming`);
     },
 
     toggle() {
@@ -686,8 +709,8 @@ function extractVideoPreview(v) {
 function buildVideoCard(v, i) {
     const isProject = v.type === 'project';
     const badge = isProject
-        ? `<span class="video-badge">PROJECT · ${(v.items || []).length}</span>`
-        : `<span class="video-badge">VIDEO</span>`;
+        ? `<span class="video-badge">${t('project.badge')} · ${(v.items || []).length}</span>`
+        : `<span class="video-badge">${t('project.videoBadge')}</span>`;
     // Для проекта — берём v.cover/v.preview, либо первое вложенное видео в проекте.
     let preview = v.preview || v.cover;
     if (!preview && isProject && v.items && v.items[0]) preview = extractVideoPreview(v.items[0]);
@@ -698,8 +721,8 @@ function buildVideoCard(v, i) {
     return `
         <article class="video-card${isProject ? ' is-project' : ''}${preview ? ' has-preview' : ''}" data-idx="${i}">
             <header class="video-card-head">
-                <h3 class="video-card-title">${v.title}</h3>
-                <p  class="video-card-desc">${v.description || ''}</p>
+                <h3 class="video-card-title">${tr(v.title)}</h3>
+                <p  class="video-card-desc">${tr(v.description) || ''}</p>
             </header>
             <div class="video-card-frame">
                 ${previewHtml}
@@ -718,8 +741,8 @@ function openVideoModal(v) {
     const m = $('#video-modal');
     const sep = v.src.includes('?') ? '&' : '?';
     $('#video-modal iframe').src = v.src + sep + 'autoplay=1';
-    $('#video-modal-title').textContent = v.title || '';
-    $('#video-modal-desc').textContent  = v.description || '';
+    $('#video-modal-title').textContent = tr(v.title) || '';
+    $('#video-modal-desc').textContent  = tr(v.description) || '';
     m.classList.add('active');
     // Окно выбора видео проекта (#project-pop) НЕ закрываем — пользователь может вернуться к списку после просмотра.
 }
@@ -737,21 +760,21 @@ function openProjectPop(project, card, evt) {
     if (evt) evt.stopPropagation();
     const pop = $('#project-pop');
     if (!pop) return;
-    $('#project-pop-title').textContent = project.title || 'Проект';
-    $('#project-pop-desc').textContent  = project.description || '';
+    $('#project-pop-title').textContent = tr(project.title) || t('project.fallbackTitle');
+    $('#project-pop-desc').textContent  = tr(project.description) || '';
     const body = $('#project-pop-body');
     body.innerHTML = (project.items || []).map((it, j) => `
         <article class="video-card project-sub-card" data-idx="${j}">
             <header class="video-card-head">
-                <h3 class="video-card-title">${it.title}</h3>
-                <p  class="video-card-desc">${it.description || ''}</p>
+                <h3 class="video-card-title">${tr(it.title)}</h3>
+                <p  class="video-card-desc">${tr(it.description) || ''}</p>
             </header>
             <div class="video-card-frame">
-                <span class="video-badge">VIDEO</span>
+                <span class="video-badge">${t('project.videoBadge')}</span>
                 <span class="play-icon" aria-hidden="true">▶</span>
             </div>
         </article>
-    `).join('') || '<div class="project-empty">В проекте пока нет видео.</div>';
+    `).join('') || `<div class="project-empty">${t('project.empty')}</div>`;
 
     $$('.project-sub-card', body).forEach(c => {
         c.addEventListener('click', () => {
@@ -789,21 +812,24 @@ document.addEventListener('click', (e) => {
 function renderPrices() {
     const root = $('#prices-body');
     if (!PRICES.length) {
-        root.innerHTML = `<div class="price-empty">Прайс-лист скоро появится. Для индивидуальных запросов — пишите в Telegram.</div>`;
+        root.innerHTML = `<div class="price-empty">${t('prices.empty')}</div>`;
         return;
     }
     root.innerHTML = `
         <ul class="prices-list">
-            ${PRICES.map((p, i) => `
+            ${PRICES.map((p, i) => {
+                const service = tr(p.service);
+                return `
             <li class="price-item" style="animation-delay:${i * 0.07}s">
-                <img class="price-icon" src="${p.image}" alt="${p.service}">
+                <img class="price-icon" src="${p.image}" alt="${service}">
                 <div class="price-info">
                     <span class="price-idx" aria-hidden="true">${String(i + 1).padStart(2, '0')}</span>
-                    <h3 class="price-name">${p.service}</h3>
-                    <p class="price-desc">${p.desc || ''}</p>
+                    <h3 class="price-name">${service}</h3>
+                    <p class="price-desc">${tr(p.desc) || ''}</p>
                 </div>
-                <span class="price-value">${p.price}</span>
-            </li>`).join('')}
+                <span class="price-value">${tr(p.price)}</span>
+            </li>`;
+            }).join('')}
         </ul>`;
 }
 
@@ -812,7 +838,7 @@ function renderPrices() {
 // ============================================================
 function renderManifest() {
     const root = $('#manifest-body');
-    if (root) root.innerHTML = MANIFEST_HTML;
+    if (root) root.innerHTML = tr(MANIFEST_HTML);
 }
 
 // Отзывы: карусель с автопрокруткой в стиле spy-OS.
@@ -825,32 +851,34 @@ function renderReviews() {
     const root = $('#reviews-body');
     if (!root) return;
     if (!REVIEWS.length) {
-        root.innerHTML = `<div class="reviews-empty">Отзывы скоро появятся.</div>`;
+        root.innerHTML = `<div class="reviews-empty">${t('reviews.empty')}</div>`;
         return;
     }
 
-    const slides = REVIEWS.map((r, i) => `
+    const slides = REVIEWS.map((r, i) => {
+        const name = tr(r.name);
+        return `
         <article class="review-slide" data-i="${i}" aria-hidden="${i === 0 ? 'false' : 'true'}">
             <div class="review-frame">
-                <img class="review-img" src="${r.image || REVIEW_DEFAULT_IMG}" alt="${(r.name || '').replace(/"/g, '&quot;')}">
+                <img class="review-img" src="${r.image || REVIEW_DEFAULT_IMG}" alt="${name.replace(/"/g, '&quot;')}">
             </div>
             <div class="review-copy">
-                <h3 class="review-name">${r.name || ''}</h3>
-                <p class="review-role">${r.role || ''}</p>
-                <p class="review-text">${r.text || ''}</p>
+                <h3 class="review-name">${name}</h3>
+                <p class="review-role">${tr(r.role) || ''}</p>
+                <p class="review-text">${tr(r.text) || ''}</p>
             </div>
-        </article>
-    `).join('');
+        </article>`;
+    }).join('');
 
     const dots = REVIEWS.map((_, i) => `
-        <button class="review-dot${i === 0 ? ' active' : ''}" data-i="${i}" type="button" aria-label="Отзыв ${i + 1}"></button>
+        <button class="review-dot${i === 0 ? ' active' : ''}" data-i="${i}" type="button" aria-label="${t('reviews.dotAria')} ${i + 1}"></button>
     `).join('');
 
     root.innerHTML = `
         <div class="reviews-carousel" id="reviews-carousel">
-            <button class="review-nav prev" type="button" aria-label="Предыдущий отзыв">‹</button>
+            <button class="review-nav prev" type="button" aria-label="${t('reviews.prevAria')}">‹</button>
             <div class="reviews-track">${slides}</div>
-            <button class="review-nav next" type="button" aria-label="Следующий отзыв">›</button>
+            <button class="review-nav next" type="button" aria-label="${t('reviews.nextAria')}">›</button>
             <div class="review-dots" role="tablist">${dots}</div>
             <div class="review-progress" aria-hidden="true"><span></span></div>
         </div>`;
@@ -930,15 +958,17 @@ function renderAbout() {
     const root = $('#about-body');
     if (!root) return;
 
-    // Бриф с портретом.
+    // Бриф с портретом + фото-каруселью под ним.
+    const carouselHTML = renderAboutCarousel();
     const briefHTML = `
         <div class="about-brief">
             <figure class="about-portrait">
-                <img src="${ABOUT_PORTRAIT.src}" alt="${(ABOUT_PORTRAIT.alt || '').replace(/"/g, '&quot;')}">
-                <figcaption>${ABOUT_PORTRAIT.caption || ''}</figcaption>
+                <img src="${ABOUT_PORTRAIT.src}" alt="${tr(ABOUT_PORTRAIT.alt).replace(/"/g, '&quot;')}">
+                <figcaption>${tr(ABOUT_PORTRAIT.caption) || ''}</figcaption>
             </figure>
-            <div class="about-brief-text">${ABOUT_BRIEF}</div>
-        </div>`;
+            <div class="about-brief-text">${tr(ABOUT_BRIEF)}</div>
+        </div>
+        ${carouselHTML}`;
 
     // Досье — хронологические этапы. Четные/нечетные строки отражаются зеркально (слева/справа).
     const fullItems = ABOUT_TIMELINE.map((it, i) => {
@@ -947,25 +977,25 @@ function renderAbout() {
         return `
             <article class="about-row${hasMedia ? '' : ' no-media'}${i % 2 ? ' alt' : ''}">
                 <div class="about-meta">
-                    <span class="about-year">${it.year || ''}</span>
-                    <h3 class="about-title">${it.title || ''}</h3>
-                    <div class="about-text">${it.text || ''}</div>
+                    <span class="about-year">${tr(it.year) || ''}</span>
+                    <h3 class="about-title">${tr(it.title) || ''}</h3>
+                    <div class="about-text">${tr(it.text) || ''}</div>
                 </div>
                 <div class="about-media" aria-hidden="${hasMedia ? 'false' : 'true'}">
-                    ${media || '<div class="about-media-empty">// MEDIA SLOT //</div>'}
-                    ${it.caption ? `<figcaption class="about-caption">${it.caption}</figcaption>` : ''}
+                    ${media || `<div class="about-media-empty">${t('about.mediaEmpty')}</div>`}
+                    ${it.caption ? `<figcaption class="about-caption">${tr(it.caption)}</figcaption>` : ''}
                 </div>
             </article>`;
     }).join('');
-    const fullHTML = `<div class="about-full">${fullItems || '<p class="about-empty">// DOSSIER — EMPTY //</p>'}</div>`;
+    const fullHTML = `<div class="about-full">${fullItems || `<p class="about-empty">${t('about.dossierEmpty')}</p>`}</div>`;
 
     root.innerHTML = `
-        <div class="about-tabs" role="tablist" aria-label="Режимы">
+        <div class="about-tabs" role="tablist" aria-label="${t('about.modesAria')}">
             <button class="about-tab" data-mode="brief" role="tab" type="button">
-                <span class="about-tab-mark" aria-hidden="true">[·]</span> VKLAD: ВЫЖИМКА
+                <span class="about-tab-mark" aria-hidden="true">[·]</span> ${t('about.modeBrief')}
             </button>
             <button class="about-tab" data-mode="full" role="tab" type="button">
-                <span class="about-tab-mark" aria-hidden="true">[···]</span> VKLAD: ДОСЬЕ
+                <span class="about-tab-mark" aria-hidden="true">[···]</span> ${t('about.modeFull')}
             </button>
         </div>
         <section class="about-pane about-pane-brief" data-mode="brief">${briefHTML}</section>
@@ -979,6 +1009,82 @@ function renderAbout() {
     };
     $$('.about-tab', root).forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
     setMode(localStorage.getItem(ABOUT_MODE_KEY) || 'brief');
+
+    bindAboutCarousel(root);
+}
+
+// ============================================================
+// Фото-карусель «О себе» (spy-OS, с автопрокруткой).
+// ============================================================
+const ABOUT_CAROUSEL_AUTOPLAY_MS = 4500;
+let _aboutCarouselTimer = null;
+let _aboutCarouselIndex = 0;
+
+function renderAboutCarousel() {
+    const list = (typeof ABOUT_CAROUSEL !== 'undefined' && Array.isArray(ABOUT_CAROUSEL)) ? ABOUT_CAROUSEL : [];
+    if (!list.length) return '';
+    const slides = list.map((p, i) => {
+        const caption = tr(p.caption) || '';
+        return `
+        <figure class="about-car-slide${i === 0 ? ' active' : ''}" data-i="${i}" aria-hidden="${i === 0 ? 'false' : 'true'}">
+            <img src="${p.src}" alt="${caption.replace(/"/g, '&quot;')}" loading="lazy">
+            ${caption ? `<figcaption>${caption}</figcaption>` : ''}
+        </figure>`;
+    }).join('');
+    const dots = list.map((_, i) => `
+        <button class="about-car-dot${i === 0 ? ' active' : ''}" data-i="${i}" type="button" aria-label="${t('about.photoAria')} ${i + 1}"></button>`).join('');
+    return `
+        <div class="about-carousel" id="about-carousel" aria-label="${t('about.galleryAria')}">
+            <div class="about-car-head">
+                <span class="about-car-label">${t('about.galleryLabel')}</span>
+                <span class="about-car-counter"><span id="about-car-cur">1</span>/<span>${list.length}</span></span>
+            </div>
+            <div class="about-car-stage">
+                <button class="about-car-nav prev" type="button" aria-label="${t('about.photoPrev')}">‹</button>
+                <div class="about-car-track">${slides}</div>
+                <button class="about-car-nav next" type="button" aria-label="${t('about.photoNext')}">›</button>
+            </div>
+            <div class="about-car-dots" role="tablist">${dots}</div>
+        </div>`;
+}
+
+function bindAboutCarousel(root) {
+    const car = $('#about-carousel', root);
+    if (!car) return;
+    const slides = $$('.about-car-slide', car);
+    const dots   = $$('.about-car-dot', car);
+    const counter = $('#about-car-cur', car);
+    if (slides.length < 2) return;
+    _aboutCarouselIndex = 0;
+
+    const go = (next) => {
+        const total = slides.length;
+        const nxt = ((next % total) + total) % total;
+        if (nxt === _aboutCarouselIndex) return;
+        slides.forEach((s, i) => {
+            s.classList.toggle('active', i === nxt);
+            s.setAttribute('aria-hidden', i === nxt ? 'false' : 'true');
+        });
+        dots.forEach((d, i) => d.classList.toggle('active', i === nxt));
+        if (counter) counter.textContent = String(nxt + 1);
+        _aboutCarouselIndex = nxt;
+    };
+
+    const stop = () => {
+        if (_aboutCarouselTimer) { clearInterval(_aboutCarouselTimer); _aboutCarouselTimer = null; }
+    };
+    const start = () => {
+        stop();
+        _aboutCarouselTimer = setInterval(() => go(_aboutCarouselIndex + 1), ABOUT_CAROUSEL_AUTOPLAY_MS);
+    };
+
+    $('.about-car-nav.prev', car).addEventListener('click', () => { go(_aboutCarouselIndex - 1); start(); });
+    $('.about-car-nav.next', car).addEventListener('click', () => { go(_aboutCarouselIndex + 1); start(); });
+    dots.forEach(d => d.addEventListener('click', () => { go(parseInt(d.dataset.i, 10)); start(); }));
+    car.addEventListener('mouseenter', stop);
+    car.addEventListener('mouseleave', start);
+
+    start();
 }
 
 // Рендер одного медиа-блока: фото | локальное video | YouTube/Drive iframe.
@@ -1123,11 +1229,50 @@ const PIXEL_LETTERS_SMALL = {
 const SPACE_WIDTH = 3;
 const BIT_ON = '1';
 
+// Собирает разметку имени для веб-шрифта (Cairo Pixel): первая буква каждого слова — .mn-cap,
+// остальные — .mn-low. Каждое слово обёрнуто в .mn-word (для переноса по строкам).
+// Тот же стиль, что у «Kenny Lee»; работает и для кириллицы.
+function buildFontNameHTML(text) {
+    const escape = (s) => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    return text.split(' ').filter(Boolean).map(word => {
+        const chars = Array.from(word);
+        const cap = escape(chars[0] || '');
+        const low = escape(chars.slice(1).join(''));
+        const inner = `<span class="mn-cap">${cap}</span>${low ? `<span class="mn-low">${low}</span>` : ''}`;
+        return `<span class="mn-word">${inner}</span>`;
+    }).join(' ');
+}
+
 function renderPixelName() {
     const name = $('.machine-name');
     if (!name) return;
-    // Если выбран веб-шрифт — пропускаем пиксельный рендер (текст выводится напрямую).
-    if (name.dataset.mode === 'font') return;
+
+    // Текст и режим берём из i18n (если доступен), иначе — из data-атрибутов (легаси).
+    const hasI18n = window.I18N && typeof window.I18N.t === 'function';
+    const i18nMode = hasI18n ? window.I18N.t('header.machineMode') : '';
+    const i18nName = hasI18n ? window.I18N.t('header.machineName') : '';
+    const i18nMulti = hasI18n ? window.I18N.t('header.machineMultiline') : '';
+    const mode = (i18nMode && i18nMode !== 'header.machineMode') ? i18nMode : (name.dataset.mode || 'font');
+    name.dataset.mode = mode;
+
+    // Многострочный режим (например, длинное RU-имя в две строки).
+    const multiline = (i18nMulti === 'true' || i18nMulti === true);
+    name.classList.toggle('multiline', multiline);
+
+    // Режим веб-шрифта (стиль Kenny Lee): пересобираем разметку под текущий язык.
+    // ВАЖНО: всегда перезаписываем имя, чтобы оно детерминированно следовало текущему языку
+    // (иначе остаётся hardcoded разметка из HTML или устаревшее значение — был flip-flop).
+    if (mode === 'font') {
+        const fontName = (i18nName && i18nName !== 'header.machineName')
+            ? i18nName
+            : (name.dataset.pixelName || name.getAttribute('aria-label') || '');
+        if (fontName) {
+            name.innerHTML = buildFontNameHTML(fontName);
+            name.setAttribute('aria-label', fontName);
+        }
+        return;
+    }
+
 
     const text = (name.dataset.pixelName || '').toUpperCase();
     const parts = [];
@@ -1169,7 +1314,7 @@ const WIN_BASE_SIZES = {
 'win-prices':   { w: 99999, h: 460, jitterW: 0,   jitterH: 60 },
     'win-about':    { w: 760,  h: 540, jitterW: 100, jitterH: 80 },
     'win-manifest': { w: 720,  h: 460, jitterW: 90,  jitterH: 70 },
-    'win-reviews':  { w: 760,  h: 520, jitterW: 100, jitterH: 80 },
+    'win-reviews':  { w: 1100, h: 560, jitterW: 120, jitterH: 80 },
 };
 const rand = (min, max) => min + Math.random() * (max - min);
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -1382,10 +1527,100 @@ function initAppDock() {
 }
 
 // ============================================================
+// Переключатель языка + пиксельный overlay-переход.
+// Оверлей — сетка 32×18, ячейки появляются с рандомным delay в матрично-зелёной палитре.
+// ============================================================
+const PIXEL_OVERLAY_COLS    = 32;
+const PIXEL_OVERLAY_ROWS    = 18;
+const PIXEL_OVERLAY_MS      = 700;
+const PIXEL_ACCENT_RATIO    = 0.08; // доля ячеек, подсвеченных матричным акцентом (≤5% яркости).
+
+/**
+ * Генерирует сетку ячеек в #pixel-overlay (один раз на страницу) и возвращает элемент.
+ * Используется любыми вызывающими кодами (язык, открытие окон и т.д.).
+ */
+function ensurePixelOverlay() {
+    const overlay = document.getElementById('pixel-overlay');
+    if (!overlay || overlay.childElementCount) return overlay;
+    overlay.style.setProperty('--px-cols', PIXEL_OVERLAY_COLS);
+    overlay.style.setProperty('--px-rows', PIXEL_OVERLAY_ROWS);
+    const total = PIXEL_OVERLAY_COLS * PIXEL_OVERLAY_ROWS;
+    const frag = document.createDocumentFragment();
+    for (let i = 0; i < total; i++) {
+        const cell = document.createElement('span');
+        cell.className = 'px-cell' + (Math.random() < PIXEL_ACCENT_RATIO ? ' px-accent' : '');
+        frag.appendChild(cell);
+    }
+    overlay.appendChild(frag);
+    return overlay;
+}
+
+/**
+ * Запускает разовый пиксельный overlay-переход.
+ * @param {Object} [opts]
+ * @param {number} [opts.applyAtMs] момент (мс от старта), когда вызывается onApply (пик развёртки).
+ * @param {Function} [opts.onApply] действие в пике (смена языка, открытие окна и т.д.).
+ * @param {Function} [opts.onDone]  вызывается после полного завершения.
+ */
+function runPixelOverlay(opts) {
+    opts = opts || {};
+    const overlay = ensurePixelOverlay();
+    if (!overlay) {
+        if (typeof opts.onApply === 'function') opts.onApply();
+        if (typeof opts.onDone  === 'function') opts.onDone();
+        return false;
+    }
+    if (overlay.classList.contains('active')) return false;
+
+    // Переприсваиваем случайные delays каждый раз — разные «развёртки» при каждом запуске.
+    overlay.querySelectorAll('.px-cell').forEach(cell => {
+        cell.style.animation = 'none';
+        // принудительный reflow для перезапуска.
+        // eslint-disable-next-line no-unused-expressions
+        cell.offsetWidth;
+        cell.style.animation = '';
+        cell.style.animationDelay = ((Math.random() * (PIXEL_OVERLAY_MS - 150)) | 0) + 'ms';
+    });
+
+    overlay.classList.add('active');
+    const applyAt = (opts.applyAtMs != null) ? opts.applyAtMs : Math.round(PIXEL_OVERLAY_MS * 0.55);
+    setTimeout(() => { if (typeof opts.onApply === 'function') opts.onApply(); }, applyAt);
+    setTimeout(() => {
+        overlay.classList.remove('active');
+        if (typeof opts.onDone === 'function') opts.onDone();
+    }, PIXEL_OVERLAY_MS + 250);
+    return true;
+}
+
+function initLangSwitch() {
+    ensurePixelOverlay();
+
+    // Клик по языковой кнопке — in-place переключение через i18n без перезагрузки.
+    $$('.lang-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const lang = btn.dataset.lang;
+            if (!lang || !window.I18N || !window.I18N.supported.includes(lang)) return;
+            if (lang === window.I18N.current) return;
+            btn.disabled = true;
+            if (typeof logEvent === 'function') {
+                logEvent(`lang.switch → ${lang} ... loading_`);
+            }
+            runPixelOverlay({
+                onApply: () => window.I18N.setLang(lang),
+                onDone:  () => { btn.disabled = false; },
+            });
+        });
+    });
+}
+
+// ============================================================
 // Matrix-rain по краям страницы
 // ============================================================
-const RAIN_GLYPHS = '01АБВГДЕЖЗИКЛМНОABCDEFGHJKLMNPQRSTUVWXYZ#$@%&*+-/=<>{}[]';
-const RAIN_COLORS = ['#00fff0', '#ff2bd6', '#ffb000', '#b8ff3a'];
+// Цифровой дождь в стиле «Матрицы»: только буквы из KELNY и цифры 6,7.
+const RAIN_GLYPHS = 'KELNY67';
+// Палитра — оттенки классического matrix-зелёного для лёгкой глубины.
+const RAIN_COLORS = ['#00ff41', '#39ff14', '#22dd33', '#9bff7a'];
 const RAIN_FONT_SIZE = 14;
 const RAIN_FPS = 14;
 
@@ -1700,6 +1935,7 @@ function bootstrap() {
     initRain('rain-left');
     initRain('rain-right');
     initTermLog();
+    initLangSwitch();
 
     // Видео-модалка
     $('#video-modal .close-btn').addEventListener('click', closeVideoModal);
@@ -1726,12 +1962,12 @@ function bootstrap() {
     if (coverClose) coverClose.addEventListener('click', (e) => { e.stopPropagation(); closeCoverPop(); });
     const plCoverBtn = $('#pl-cover');
     if (plCoverBtn) plCoverBtn.addEventListener('click', () => {
-        const t = TRACKS[player.currentIndex];
-        if (!t) return;
+        const track = TRACKS[player.currentIndex];
+        if (!track) return;
         // Если обложка уже открыта — закроем, иначе откроем.
         const pop = $('#cover-pop');
         if (pop && !pop.hidden) closeCoverPop();
-        else openCoverFor(t);
+        else openCoverFor(track);
     });
     window.addEventListener('resize', positionCoverPop);
     window.addEventListener('resize', updateDescOverflow);
@@ -1766,6 +2002,17 @@ function bootstrap() {
         if (tile) logEvent(`video.open ... loading_`);
     });
 }
+
+// Экспортируем render-функции в глобальную область — чтобы i18n.js мог вызывать их
+// при переключении языка (app.js обёрнут в IIFE, иначе эти имена не видны снаружи).
+window.renderPixelName   = renderPixelName;
+window.renderTracksTable = renderTracksTable;
+window.buildTracksHeader = buildTracksHeader;
+window.renderVideos      = renderVideos;
+window.renderPrices      = renderPrices;
+window.renderManifest    = renderManifest;
+window.renderReviews     = renderReviews;
+window.renderAbout       = renderAbout;
 
 document.addEventListener('DOMContentLoaded', bootstrap);
 })();
